@@ -1,6 +1,8 @@
 import React, { PropTypes } from 'react';
 import { RadioButtons } from 'react-native-radio-buttons';
 import ImagePicker from 'react-native-image-picker';
+import $ from '../utils';
+import Notification from '../plugins/notification';
 import {
   StyleSheet
   , Text
@@ -14,6 +16,7 @@ import {
   , ListView
   , ScrollView
   , TouchableWithoutFeedback
+  , Dimensions
 } from 'react-native';
 import Menu, {
   MenuContext,
@@ -33,6 +36,7 @@ import {
 import { connect } from 'react-redux';
 import types from '../action-types';
 
+const Screen = Dimensions.get('window');
 const Item = Popover.Item;
 const styles = StyleSheet.create({
   container: {
@@ -41,7 +45,7 @@ const styles = StyleSheet.create({
     width: '90%'
   },
   fullScreen: {
-    height: '100%',
+    height: Screen.height - 20,
     width: '100%'
   },
   scrollView: {
@@ -61,7 +65,6 @@ const styles = StyleSheet.create({
     
   },
   btn: {
-    fontSize: 36
   },
   line30: {
     lineHeight: 30
@@ -69,6 +72,12 @@ const styles = StyleSheet.create({
   main: {
     marginLeft: 'auto',
     marginRight: 'auto',
+    width: '90%', 
+  },
+  btnOut: {
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    marginBottom: 10,
     width: '90%', 
   },
   title: {
@@ -116,46 +125,21 @@ const styles = StyleSheet.create({
   },
 });
 
-const UploadScreen = ({ logout, goList, upload, uploadImg, ...props }) => {
+const UploadScreen = ({ 
+  logout
+  , goList
+  , upload
+  , uploadSuccess
+  , uploadFail
+  , uploadImg
+  , updatePing
+  , showToast
+
+  , ...props 
+}) => {
   const _this = this;
-
-  _this.state = {
-    language: ''
-  };
-
   _this.props = {
-    ...props,
-    dataSource: [
-      {
-        road: '车道1',
-        type: '入口'
-      },
-      {
-        road: '车道2',
-        type: '入口'
-      },
-      {
-        road: '车道3',
-        type: '出口'
-      },
-      {
-        road: '车道4',
-        type: '出口'
-      },
-      {
-        road: '车道2',
-        type: '入口'
-      },
-      {
-        road: '车道3',
-        type: '出口'
-      },
-      {
-        road: '车道4',
-        type: '出口'
-      }
-    ],
-    shortPing: '沪'
+    ...props
   };
 
   const choosePic = () => {
@@ -169,9 +153,13 @@ const UploadScreen = ({ logout, goList, upload, uploadImg, ...props }) => {
 
       if (res.uri) {
         let avatarSource = { uri: res.uri };
-        uploadImg({avatarSource});
+        uploadImg({avatarSource, carImage: 'data:image/jpeg;base64,' + res.data});
       }
     });
+  };
+
+  const setCarCode = (code) => {
+    _this.props.carCode = code;
   };
 
   const setSelectedOption = (selectedOption) => {
@@ -185,10 +173,10 @@ const UploadScreen = ({ logout, goList, upload, uploadImg, ...props }) => {
  
     return (
       <TouchableWithoutFeedback onPress={onSelect} key={index}>
-        <View style={styles.listItem}>
+        <View style={styles.listItem} key={index}>
           {img}
-          <Text style={styles.line30}>{option.road}</Text>
-          <Text style={styles.line30}>{option.type}</Text>
+          <Text style={styles.line30}>{option.name}</Text>
+          <Text style={styles.line30}>{option.type == 1 ? '入口' : '出口'}</Text>
         </View>
       </TouchableWithoutFeedback>
     );
@@ -198,28 +186,91 @@ const UploadScreen = ({ logout, goList, upload, uploadImg, ...props }) => {
     return <View style={styles.listItemOut}>{optionNodes}</View>;
   }
 
+  const _logout = () => {
+    logout(_this.props);
+  }
+
+  const _updatePing = (value) => {
+    _this.props.shortPing = value;
+    updatePing(_this.props);
+  }
+
+  const _upload = () => {
+    let { token, carImage, shortPing, carCode, selectedOption } = _this.props;
+    
+    if (!token) {
+      showToast('token不存在');
+    }
+
+    else if (!carImage) {
+      showToast('请选择车辆照片');
+    }
+
+    else if (!carCode) {
+      showToast('请填写车牌号');
+    }
+
+    else if (!selectedOption) {
+      showToast('请选择异常路段');
+    }
+
+    else {
+      let {netRoadId, roadId, stationId, baseLaneId, type} = selectedOption;
+      let 
+        laneType = type
+        , laneId = baseLaneId
+        , carPlate = shortPing + carCode
+        ;
+      upload(_this.props);
+      $.get(URL.UPLOAD, {sign: JSON.stringify({
+        netRoadId
+        , roadId
+        , stationId
+        , laneType
+        , laneId
+        , token
+        , carPlate
+        , carImage
+      })}).then((res) => {
+        const data = JSON.parse(res._bodyInit);
+        // alert(JSON.stringify(data))
+
+        if (data.code != 0) {
+          showToast(data.msg);
+          return loginFail(_this.props);          
+        }
+
+        showToast('上传成功');
+        setTimeout(() => uploadSuccess(_this.props), 100);
+      }).catch((err) => {
+        showToast(err.message);
+        uploadFail(_this.props);
+      });
+    }
+  };
+
   return(
     <View style={styles.container, styles.fullScreen}>
       <Image source={require('../images/bg2.jpg')} style={styles.fullScreen} >
         <View style={styles.main, styles.fullScreen}>
           
-          <MenuContext style={{flex:1}}>
+          <MenuContext style={{flex:1, marginTop: 10}}>
             <View style={styles.header}>
               <Image style={styles.pic} source={require('../images/touming.png')} />
-              <Text style={{height: 30, lineHeight: 30, color: '#FFF'}}>当前站点{_this.props.userName}</Text>
+              <Text style={{height: 30, lineHeight: 30, color: '#FFF', backgroundColor: 'rgba(0,0,0,0)'}}>当前站点</Text>
               
-              <Menu onSelect={value => alert(`Selected number: ${value}`)} >
+              <Menu onSelect={value => {}} >
                 <MenuTrigger>
                   <Image style={styles.pic, {marginTop: 10, marginRight: 10}} source={require('../images/nav_icon_tab_pressed.png')} />
                 </MenuTrigger>
                 <MenuOptions>
-                  <MenuOption onSelect={logout}>
+                  <MenuOption >
                     <Button
                         title='退出登录'
-                        onPress={logout}
+                        onPress={_logout}
                       />
                   </MenuOption>
-                  <MenuOption onSelect={goList}>
+                  <MenuOption >
                       <Button
                         title='上传记录'
                         onPress={goList}
@@ -229,7 +280,7 @@ const UploadScreen = ({ logout, goList, upload, uploadImg, ...props }) => {
               </Menu>
             </View>
             <View>
-              <Text style={{height: 30, lineHeight: 30, textAlign: 'center', color: '#FFF', fontSize: 24}}>广东佛山 - 龙门收费站</Text>
+              <Text style={{height: 30, lineHeight: 30, textAlign: 'center', color: '#FFF', backgroundColor: 'rgba(0,0,0,0)', fontSize: 24}}>{_this.props.road.roadName} - {_this.props.station.stationName}</Text>
             </View>
             
             <View style={styles.mainMiddle}>
@@ -247,16 +298,18 @@ const UploadScreen = ({ logout, goList, upload, uploadImg, ...props }) => {
                   <Picker
                       style={{width:60}}
                       selectedValue={_this.props.shortPing}
-                      onValueChange={(value) => this.setState({language: value})}>
-                      {'京 津 沪 渝 冀 豫 云 辽 黑 湘 皖 鲁 新 苏 浙 赣 鄂 桂 甘 晋 蒙 陕 吉 闽 贵 粤 青 藏 川 宁 琼'.split(/\s+/g).map((el) => (<Picker.Item label={el} value={el} />))}
+                      onValueChange={(value) => {_updatePing(value)}}>
+                      {'京 津 沪 渝 冀 豫 云 辽 黑 湘 皖 鲁 新 苏 浙 赣 鄂 桂 甘 晋 蒙 陕 吉 闽 贵 粤 青 藏 川 宁 琼'.split(/\s+/g).map((el, i) => (<Picker.Item label={el} value={el} key={i} />))}
                     </Picker>
-                  <InputItem style={{width: 150, height:50}} placeholder="请输入车牌号" />
+                  <InputItem style={{width: 150, height:50}} 
+                      placeholder="请输入车牌号" 
+                      onChange={setCarCode}/>
                 </View>
 
                 <View style={styles.scrollView} >
                   <ScrollView>
                     <RadioButtons
-                        options={ _this.props.dataSource }
+                        options={ _this.props.lanes }
                         onSelection={ setSelectedOption.bind(this) }
                         selectedOption={_this.props.selectedOption }
                         renderOption={ renderOption }
@@ -268,14 +321,16 @@ const UploadScreen = ({ logout, goList, upload, uploadImg, ...props }) => {
               </View>
           </MenuContext>
           <WhiteSpace size="xl" />
-          <View style={styles.main}>
-            <Button onPress={upload} 
-                  style={styles.btn, {fontSize: 30}}
-                  color="#CCC"
-                  title="上传" />
+          <View style={styles.btnOut}>
+            <Button onPress={_upload} 
+                  style={styles.btn}
+                  color={this.props.uploadWord ==="上传" ? "rgb(17,148,247)" : "#CCC"}
+                  title={this.props.uploadWord} />
           </View>
 
         </View>
+
+        <Notification message={this.props.toastMessage} timeout={1000} random={this.props.random} />
       </Image>
     </View>
   );
@@ -292,29 +347,56 @@ UploadScreen.navigationOptions = {
 
 
 UploadScreen.propTypes = {
-  isLoggedIn: PropTypes.bool.isRequired,
-  avatarSource: PropTypes.string.isRequired,
   logout: PropTypes.func.isRequired,
   goList: PropTypes.func.isRequired,
   upload: PropTypes.func.isRequired,
+  uploadSuccess: PropTypes.func.isRequired,
+  uploadFail: PropTypes.func.isRequired,
   uploadImg: PropTypes.func.isRequired,
+  updatePing: PropTypes.func.isRequired,
+
+  isLoggedIn: PropTypes.bool.isRequired,
+  avatarSource: PropTypes.string.isRequired,
+  account: PropTypes.string.isRequired,
+  passwd: PropTypes.string.isRequired,
+  uploadWord: PropTypes.string.isRequired,
+  road: PropTypes.object.isRequired, 
+  station: PropTypes.object.isRequired,  
+  lanes: PropTypes.array.isRequired,  
+  token: PropTypes.string.isRequired,  
 };
 
 UploadScreen.defaultProps = {
-  avatarSource : require('../images/photo.jpg')
+  avatarSource : '',
+  shortPing: '沪',
+  uploadWord: '上传'
 };
 
-const mapStateToProps = state => ({
-  isLoggedIn: state.login.isLoggedIn,
-  userName: state.nav.userName,
-  avatarSource: state.upload.avatarSource
+const mapStateToProps = ({login, nav, upload}) => ({
+  isLoggedIn: login.isLoggedIn,
+  avatarSource: upload.avatarSource,
+  account: login.account,
+  passwd: login.passwd,
+  road: login.road,
+  station: login.station,
+  lanes: login.lanes,
+  token: login.token,
+  carCode: upload.carCode,
+  shortPing: upload.shortPing,
+  carImage: upload.carImage,
+  toastMessage: login.toastMessage,
+  random: login.random,
 });
 
 const mapDispatchToProps = dispatch => ({
-  logout: () => dispatch({ type: types.LOGOUT }),
+  logout: (payload) => dispatch({ type: types.LOGOUT, payload }),
   goList: () => dispatch({ type: types.LIST}),
-  upload: () => dispatch({ type: types.UPLOAD}),
-  uploadImg: (payload) => dispatch({ type: types.UPLOADIMG, payload})
+  upload: (payload) => dispatch({ type: types.UPLOAD, payload}),
+  uploadSuccess: (payload) => dispatch({ type: types.UPLOADSUCCESS, payload}),
+  uploadFail: (payload) => dispatch({ type: types.UPLOADFAIL, payload}),
+  uploadImg: (payload) => dispatch({ type: types.UPLOADIMG, payload}),
+  updatePing: (payload) => dispatch({ type: types.UPDATEPING, payload}),
+  showToast: (toastMessage) => dispatch({ type: types.TOAST, payload: toastMessage }),
 });
 
 export default connect(
