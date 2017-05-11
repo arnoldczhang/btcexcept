@@ -6,5 +6,10 @@ export default {
 	LOGOUT: 'logout',
 	LIST: 'list',
 	UPLOAD: 'upload',
-	UPLOADIMG: 'uploadimg'
+	UPLOADSUCCESS: 'uploadsuccess',
+	UPLOADFAIL: 'uploadfail',
+	UPLOADIMG: 'uploadimg',
+	TOAST: 'toast',
+	UPDATEPING: 'updateping',
+	UPDATEDATASOURCE: 'updatedatasource'
 };

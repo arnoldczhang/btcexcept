@@ -9,16 +9,16 @@ export default {
 
 				if (Array.isArray(value)) {
 					value.forEach((v) => {
-						result += '&' + key + '=' + v;
+						result += '&' + key + '=' + encodeURIComponent(v);
 					});
 				}
 
 				else {
-					result += '&' + key + '=' + value;
+					result += '&' + key + '=' + encodeURIComponent(value);
 				}
 			});
 
-			return result.substr(1);
+			return result;
 		}
 
 		else if (obj) {
@@ -34,6 +34,10 @@ export default {
 	ajax (method = 'GET', url, data = {}) {
 
 		let body;
+
+		if (!/\?/.test(url)) {
+			url += '?version=1.0.0';
+		}
 
 		if (method === 'GET') {
 			url += this.serialize(data);
