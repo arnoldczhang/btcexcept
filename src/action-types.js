@@ -11,5 +11,6 @@ export default {
 	UPLOADIMG: 'uploadimg',
 	TOAST: 'toast',
 	UPDATEPING: 'updateping',
-	UPDATEDATASOURCE: 'updatedatasource'
+	UPDATEDATASOURCE: 'updatedatasource',
+	SELECTOPT: 'selectopt'
 };

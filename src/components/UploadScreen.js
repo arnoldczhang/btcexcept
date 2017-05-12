@@ -12,11 +12,13 @@ import {
   , TextInput
   , ToastAndroid
   , Picker
+  // , PickerIOS
   , StatusBar
   , ListView
   , ScrollView
   , TouchableWithoutFeedback
   , Dimensions
+  , Platform
 } from 'react-native';
 import Menu, {
   MenuContext,
@@ -35,9 +37,13 @@ import {
 } from 'antd-mobile';
 import { connect } from 'react-redux';
 import types from '../action-types';
+import PickerIOS from 'react-native-picker';
 
 const Screen = Dimensions.get('window');
+const isIOS = Platform.OS == 'ios';
+const PINGLIST = '京 津 沪 渝 冀 豫 云 辽 黑 湘 皖 鲁 新 苏 浙 赣 鄂 桂 甘 晋 蒙 陕 吉 闽 贵 粤 青 藏 川 宁 琼'.split(/\s/g);
 const Item = Popover.Item;
+
 const styles = StyleSheet.create({
   container: {
   },
@@ -45,7 +51,7 @@ const styles = StyleSheet.create({
     width: '90%'
   },
   fullScreen: {
-    height: Screen.height - 20,
+    height: Screen.height - (isIOS ? 0 : 20),
     width: '100%'
   },
   scrollView: {
@@ -123,6 +129,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between'
   },
+  text50: {
+    width:50,
+    height:50,
+    lineHeight:50,
+    marginBottom: isIOS ? 0 : 15
+  },
+  text50c: {
+    width:50,
+    height:50,
+    lineHeight:50,
+    fontSize:16,
+    textAlign: 'right'
+  },
+  MenuOpt: {
+    color:'rgb(17,148,247)', 
+    height: 40, 
+    lineHeight:30, 
+    textAlign:'center'
+  }
 });
 
 const UploadScreen = ({ 
@@ -134,9 +159,11 @@ const UploadScreen = ({
   , uploadImg
   , updatePing
   , showToast
+  , selectOption
 
   , ...props 
 }) => {
+
   const _this = this;
   _this.props = {
     ...props
@@ -152,8 +179,18 @@ const UploadScreen = ({
     }, (res) => {
 
       if (res.uri) {
+
+        if (!/\.jpg$/.test(res.uri)) {
+          return showToast('上传照片格式必须是jpg');
+        }
+
+        if (res.fileSize > 400 * 1024) {
+          return showToast('照片过大，请重新选择，不要超过400kb');
+        }
+
+        let {carCode} = _this.props;
         let avatarSource = { uri: res.uri };
-        uploadImg({avatarSource, carImage: 'data:image/jpeg;base64,' + res.data});
+        uploadImg({carCode, avatarSource, carImage: 'data:image/jpeg;base64,' + res.data});
       }
     });
   };
@@ -163,7 +200,26 @@ const UploadScreen = ({
   };
 
   const setSelectedOption = (selectedOption) => {
-    _this.props.selectedOption = selectedOption;
+    selectOption({selectedOption, carCode: _this.props.carCode});
+  };
+
+  const showPick = () => {
+    PickerIOS.init({
+      pickerData: PINGLIST,
+      selectedValue: ['沪'],
+      pickerTitleText: '请选择',
+      pickerConfirmBtnText: '确认',
+      pickerCancelBtnText: '取消',
+      onPickerConfirm: data => {
+        _updatePing(data);
+      },
+      onPickerCancel: data => {
+        // console.log(data);
+      },
+      onPickerSelect: data => {
+        // console.log(data);
+      }
+    });
   };
  
   const renderOption = (option, selected, onSelect, index) => {
@@ -191,8 +247,7 @@ const UploadScreen = ({
   }
 
   const _updatePing = (value) => {
-    _this.props.shortPing = value;
-    updatePing(_this.props);
+    updatePing(value);
   }
 
   const _upload = () => {
@@ -259,22 +314,16 @@ const UploadScreen = ({
               <Image style={styles.pic} source={require('../images/touming.png')} />
               <Text style={{height: 30, lineHeight: 30, color: '#FFF', backgroundColor: 'rgba(0,0,0,0)'}}>当前站点</Text>
               
-              <Menu onSelect={value => {}} >
-                <MenuTrigger>
-                  <Image style={styles.pic, {marginTop: 10, marginRight: 10}} source={require('../images/nav_icon_tab_pressed.png')} />
+              <Menu>
+                <MenuTrigger style={{marginTop:20}}>
+                  <Image style={styles.pic, {marginRight: 10}} source={require('../images/nav_icon_tab_pressed.png')} />
                 </MenuTrigger>
                 <MenuOptions>
-                  <MenuOption >
-                    <Button
-                        title='退出登录'
-                        onPress={_logout}
-                      />
+                  <MenuOption onSelect={value => {_logout()}}>
+                    <Text style={styles.MenuOpt}>退出登录</Text>
                   </MenuOption>
-                  <MenuOption >
-                      <Button
-                        title='上传记录'
-                        onPress={goList}
-                      />
+                  <MenuOption onSelect={value => {goList()}}>
+                    <Text style={styles.MenuOpt}>上传记录</Text>
                   </MenuOption>
                 </MenuOptions>
               </Menu>
@@ -294,14 +343,21 @@ const UploadScreen = ({
                 </View>
 
                 <View style={styles.input}>
-                  <Text style={{height: 50, width: 50, lineHeight: 35}} >车牌号 </Text>
-                  <Picker
-                      style={{width:60}}
-                      selectedValue={_this.props.shortPing}
-                      onValueChange={(value) => {_updatePing(value)}}>
-                      {'京 津 沪 渝 冀 豫 云 辽 黑 湘 皖 鲁 新 苏 浙 赣 鄂 桂 甘 晋 蒙 陕 吉 闽 贵 粤 青 藏 川 宁 琼'.split(/\s+/g).map((el, i) => (<Picker.Item label={el} value={el} key={i} />))}
-                    </Picker>
-                  <InputItem style={{width: 150, height:50}} 
+                  <Text style={styles.text50} >车牌号 </Text>
+                  {
+                    isIOS ? (<Text 
+                      style={styles.text50c}
+                      onPress={showPick}>{_this.props.shortPing} </Text>)
+                      : (
+                        <Picker
+                          style={{width:60}}
+                          selectedValue={_this.props.shortPing}
+                          onValueChange={(value) => {_updatePing(value)}}>
+                          {PINGLIST.map((el, i) => (<Picker.Item label={el} value={el} key={i} />))}
+                        </Picker>                              
+                      )
+                  }
+                  <InputItem style={{width: 150, height:50, lineHeight:50, borderBottomWidth:0}} 
                       placeholder="请输入车牌号" 
                       onChange={setCarCode}/>
                 </View>
@@ -354,6 +410,7 @@ UploadScreen.propTypes = {
   uploadFail: PropTypes.func.isRequired,
   uploadImg: PropTypes.func.isRequired,
   updatePing: PropTypes.func.isRequired,
+  selectOption: PropTypes.func.isRequired,
 
   isLoggedIn: PropTypes.bool.isRequired,
   avatarSource: PropTypes.string.isRequired,
@@ -362,6 +419,7 @@ UploadScreen.propTypes = {
   uploadWord: PropTypes.string.isRequired,
   road: PropTypes.object.isRequired, 
   station: PropTypes.object.isRequired,  
+  selectedOption: PropTypes.object.isRequired,  
   lanes: PropTypes.array.isRequired,  
   token: PropTypes.string.isRequired,  
 };
@@ -377,13 +435,14 @@ const mapStateToProps = ({login, nav, upload}) => ({
   avatarSource: upload.avatarSource,
   account: login.account,
   passwd: login.passwd,
-  road: login.road,
-  station: login.station,
-  lanes: login.lanes,
+  road: login.road || {},
+  station: login.station || {},
+  lanes: login.lanes || [],
   token: login.token,
   carCode: upload.carCode,
   shortPing: upload.shortPing,
   carImage: upload.carImage,
+  selectedOption: upload.selectedOption,
   toastMessage: login.toastMessage,
   random: login.random,
 });
@@ -391,6 +450,7 @@ const mapStateToProps = ({login, nav, upload}) => ({
 const mapDispatchToProps = dispatch => ({
   logout: (payload) => dispatch({ type: types.LOGOUT, payload }),
   goList: () => dispatch({ type: types.LIST}),
+  selectOption: (payload) => dispatch({ type: types.SELECTOPT, payload}),
   upload: (payload) => dispatch({ type: types.UPLOAD, payload}),
   uploadSuccess: (payload) => dispatch({ type: types.UPLOADSUCCESS, payload}),
   uploadFail: (payload) => dispatch({ type: types.UPLOADFAIL, payload}),

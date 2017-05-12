@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#444',
     alignItems: 'center',
     padding: 20,
-    borderRadius: 100,
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOpacity: 0.5,
     shadowRadius: 1,
