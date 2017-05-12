@@ -113,6 +113,7 @@ const LoginScreen = ({
 
         if (data.code != 0) {
           showToast(data.msg);
+          isLogin = false;
           return loginFail(_this.props);          
         }
 
@@ -141,6 +142,7 @@ const LoginScreen = ({
       }).catch((err) => {
         showToast(err.message);
         loginFail(_this.props);
+        isLogin = false;
       });
     }
   };

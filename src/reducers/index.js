@@ -13,7 +13,7 @@ function nav(state = initialNavState, action) {
   let nextState;
   switch (action.type) {
     case types.LOGOUT:
-      nextState = getStateForAction(NavAct.back(), {...state, ...initialNavState});
+      nextState = getStateForAction(NavAct.back(), {...initialNavState});
       break;
     case types.LOGINSUCCESS:
       nextState = getStateForAction(NavAct.navigate({ routeName: 'Upload' }), Object.assign({}, state, action.payload));
@@ -46,7 +46,7 @@ function login (state = initialAuthState, {type, payload}) {
     case types.LOGINFAIL:
       return { ...state, ...payload, loadWord: '登陆' };
     case types.LOGOUT:
-      return { ...state, ...initialAuthState };
+      return { ...initialAuthState };
     case types.LIST:
       return { ...state, isLoggedIn: true };
     case types.TOAST:
@@ -65,12 +65,14 @@ const initialUploadState = {
 function upload (state = initialUploadState, {type, payload}) {
   switch (type) {
     case types.UPLOADIMG:
-      let {avatarSource, carImage} = payload;
-      return {...state, ...{avatarSource, carImage}};
+      let {avatarSource, carImage, carCode} = payload;
+      return {...state, ...{avatarSource, carImage, carCode}};
     case types.UPDATEPING:
-      return {...state, ...payload};
+      return {...state, ...{shortPing: payload}};
     case types.LOGOUT:
-      return {...state, ...initialUploadState};
+      return {...initialUploadState};
+    case types.SELECTOPT:
+      return {...state, ...payload};
     case types.UPLOAD:
       return {...state, ...payload, ...{uploadWord: '上传中...'}};
     case types.UPLOADSUCCESS:
@@ -88,7 +90,7 @@ const initialListState = {
 function list (state = initialListState, {type, payload}) {
   switch (type) {
     case types.UPDATEDATASOURCE:
-      return {...state, ...{dataSource: payload.dataSource}};
+      return {...state, ...{dataSource: payload}};
     default:
       return state;
   }

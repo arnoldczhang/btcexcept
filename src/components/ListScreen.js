@@ -25,7 +25,7 @@ import {
   , Icon
   , Popover
 } from 'antd-mobile';
-import SGListView from 'react-native-sglistview';
+// import SGListView from 'react-native-sglistview';
 import types from '../action-types';
 
 const styles = StyleSheet.create({
@@ -38,16 +38,34 @@ const styles = StyleSheet.create({
   },
 });
 
+const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+
 const ListScreen = ({
   showToast
   , updateDataSource
+
   , ...props
 }) => {
   const _this = this;
 
   _this.props = {
-    ...props,
-    dataSource: [
+    ...props
+  };
+
+  let {token, isMobile} = _this.props;
+
+  $.get(URL.LIST, {sign: JSON.stringify({
+    token
+    , isMobile
+  })}).then((res) => {
+    const data = JSON.parse(res._bodyInit);
+    // alert(JSON.stringify(data))
+
+    if (data.code != 0) {
+      return showToast(data.msg);
+    }
+
+    updateDataSource([
       {
         "id": 1234,
         "carPlate": "粤AB349C",
@@ -69,37 +87,17 @@ const ListScreen = ({
         "uploadTime": "2017-05-03 12:55:23",
         photo: 'http://facebook.github.io/react/img/logo_og.png'
       },
-    ]
-  };
-
-  let {token, isMobile} = _this.props;
-
-  $.get(URL.LIST, {sign: JSON.stringify({
-    token
-    , isMobile
-  })}).then((res) => {
-    const data = JSON.parse(res._bodyInit);
-    // alert(JSON.stringify(data))
-
-    if (data.code != 0) {
-      return showToast(data.msg);
-    }
-
-    _this.props.dataSource = data.data.history;
-    updateDataSource(_this.props);
+    ]);
+    // updateDataSource(data.data.history);
   }).catch((err) => {
     showToast(err.message);
   });
-
-  _this.attachEnd = () => {
-
-  };
 
   _this.getDataSource = () => {
 
     const dataSource = new ListView.DataSource(
       { rowHasChanged: (r1, r2) => r1.uuid !== r2.uuid });
-
+    alert(1)
     const hasData = _this.props.dataSource.length > 0;
     return hasData ? dataSource.cloneWithRows(_this.props.dataSource) : dataSource;
   };
@@ -107,7 +105,7 @@ const ListScreen = ({
   _this.renderRow = (rowData, sectionID, rowID) => {
     return (
       <View key={sectionID} style={{overflow: 'hidden',backgroundColor: '#fff',marginBottom: 10}}>
-        <View style={{flex:2, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height:40, lineHeight:30, fontSize:24}}>
+        <View style={{flex:2, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height:40, fontSize:24}}>
           <Text style={{lineHeight:30}}>车牌号：{rowData.carPlate}</Text>
           <Text style={{lineHeight:30}}>{rowData.lane.name + (rowData.lane.type == 1 ? '入口' : '出口')}<Image style={{height: 30, width:30}} source={require('../images/location.jpg')}/></Text>
         </View> 
@@ -122,10 +120,9 @@ const ListScreen = ({
   };
 
   return (<View style={styles.fullScreen, styles.container}>
-      <SGListView
-          dataSource={_this.getDataSource()}
+      <ListView
+          dataSource={_this.props.dataSource}
           renderRow={_this.renderRow}
-          onEndReached={_this.attachEnd}
         />
   </View>);
 };
@@ -140,11 +137,12 @@ ListScreen.propTypes = {
 };
 
 ListScreen.defaultProps = {
+  dataSource: ds.cloneWithRows([])
 };
 
 const mapStateToProps = ({login, nav, upload, list}) => ({
   token: login.token,
-  dataSource: list.dataSource,
+  dataSource: ds.cloneWithRows(list.dataSource || []),
   isMobile: 1
 });
 
