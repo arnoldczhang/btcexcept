@@ -1,5 +1,7 @@
+const host = `https://hunan.withbtc.com/report/api/`;
+
 export default URL = {
-	LOGIN: `https://hunan.withbtc.com/report/api/handset/login`,
-	UPLOAD: `https://hunan.withbtc.com/report/api/handset/recieve`,
-	LIST: `https://hunan.withbtc.com/report/api/handset/history`,
+	LOGIN: `${host}handset/login`,
+	UPLOAD: `${host}handset/recieve`,
+	LIST: `${host}handset/history`,
 };
