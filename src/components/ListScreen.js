@@ -65,30 +65,30 @@ const ListScreen = ({
       return showToast(data.msg);
     }
 
-    updateDataSource([
-      {
-        "id": 1234,
-        "carPlate": "粤AB349C",
-        "imgPath": "",
-        "road": {
-          "roadId":12,
-          "roadName": "广深高速"
-        },
-        "station": {
-          "stationId": 12,
-          "stationName": "站名"
-        },
-        "lane": {
-          "netRoadId": 1,
-          "lineId": 1,
-          "name": "车道1",
-          "type": 1
-        },
-        "uploadTime": "2017-05-03 12:55:23",
-        photo: 'http://facebook.github.io/react/img/logo_og.png'
-      },
-    ]);
-    // updateDataSource(data.data.history);
+    // updateDataSource([
+    //   {
+    //     "id": 1234,
+    //     "carPlate": "粤AB349C",
+    //     "imgPath": "",
+    //     "road": {
+    //       "roadId":12,
+    //       "roadName": "广深高速"
+    //     },
+    //     "station": {
+    //       "stationId": 12,
+    //       "stationName": "站名"
+    //     },
+    //     "lane": {
+    //       "netRoadId": 1,
+    //       "lineId": 1,
+    //       "name": "车道1",
+    //       "type": 1
+    //     },
+    //     "uploadTime": "2017-05-03 12:55:23",
+    //     photo: 'http://facebook.github.io/react/img/logo_og.png'
+    //   },
+    // ]);
+    updateDataSource(data.data.history);
   }).catch((err) => {
     showToast(err.message);
   });
@@ -110,7 +110,7 @@ const ListScreen = ({
           <Text style={{lineHeight:30}}>{rowData.lane.name + (rowData.lane.type == 1 ? '入口' : '出口')}<Image style={{height: 30, width:30}} source={require('../images/location.jpg')}/></Text>
         </View> 
         <View style={{flex:1, flexDirection: 'row', justifyContent:'center', height: 150, width:'100%'}}>
-          <Image style={{height: '100%', width:'100%'}} source={{uri: rowData.photo}}/>
+          <Image style={{height: '100%', width:'100%'}} source={{uri: rowData.imgPath}}/>
         </View>
         <View style={{flex:1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
           <Text style={{height:30, lineHeight:30}}>{rowData.uploadTime}</Text>
@@ -143,7 +143,7 @@ ListScreen.defaultProps = {
 const mapStateToProps = ({login, nav, upload, list}) => ({
   token: login.token,
   dataSource: ds.cloneWithRows(list.dataSource || []),
-  isMobile: 1
+  isMobile: 0
 });
 
 const mapDispatchToProps = dispatch => ({
