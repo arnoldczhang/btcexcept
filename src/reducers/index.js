@@ -31,8 +31,11 @@ function nav(state = initialNavState, action) {
 
 const initialAuthState = { 
   isLoggedIn: false,
-  account: 'reportsiteuser',
-  passwd: 'Test@123'
+  account: '',
+  passwd: '',
+  random: ''
+  // account: 'reportsiteuser',
+  // passwd: 'Test@123'
 };
 
 function login (state = initialAuthState, {type, payload}) {
@@ -40,17 +43,17 @@ function login (state = initialAuthState, {type, payload}) {
     case types.LOGINSUCCESS:
       return { ...state, isLoggedIn: true, ...payload, loadWord: '登陆' };
     case types.LOGINING:
-      return { ...state, ...payload, loadWord: '登陆中...' };
+      return { ...state, ...payload, ...{loadWord: '登陆中...'} };
     case types.ENTERINPUT:
-      return { ...state, loadWord: '登陆', ...payload};
+      return { ...state, ...payload };
     case types.LOGINFAIL:
-      return { ...state, ...payload, loadWord: '登陆' };
+      return { ...state, ...payload, ...{loadWord: '登陆'} };
     case types.LOGOUT:
-      return { ...initialAuthState };
+      return { ...initialAuthState, ...{account: payload.account, passwd: payload.passwd} };
     case types.LIST:
       return { ...state, isLoggedIn: true };
     case types.TOAST:
-      return {...state, ...{toastMessage: payload, loadWord: '登陆', random: Math.random()}};
+      return {...state, ...{toastMessage: payload, random: Math.random()}};
     default:
       return state;
   }
@@ -65,8 +68,8 @@ const initialUploadState = {
 function upload (state = initialUploadState, {type, payload}) {
   switch (type) {
     case types.UPLOADIMG:
-      let {avatarSource, carImage, carCode} = payload;
-      return {...state, ...{avatarSource, carImage, carCode}};
+      let {avatarSource, carImage, carCode, imageName} = payload;
+      return {...state, ...{avatarSource, carImage, carCode, imageName}};
     case types.UPDATEPING:
       return {...state, ...{shortPing: payload}};
     case types.LOGOUT:
