@@ -86,29 +86,6 @@ const LoginScreen = ({
         passwd
       })}).then((res) => {
         const data = JSON.parse(res._bodyInit);
-
-        //FIXME 测试数据
-        // data.data = {
-        //   code: 0,
-        //   "road": {
-        //     "rid": 1342,
-        //     "name": "广深高速"
-        //   },
-        //   "station": {
-        //     "sid": 23452,
-        //     "name": "大朗收费站"
-        //   },
-        //   "lanes": [{
-        //     "lid": 1,
-        //     "type": "2"
-        //   }, {
-        //     "lid": 2,
-        //     "type": "1" // 1代表入口,2代表出口
-        //   }, {
-        //     "lid": 3,
-        //     "type": "2"
-        //   }]
-        // }
         // alert(JSON.stringify(data))
 
         if (data.code != 0) {
@@ -118,24 +95,7 @@ const LoginScreen = ({
         }
 
         let {road, station, lanes, token} = data.data;
-
-        //FIXME
-        lanes = [{
-          "netRoadId": 1,
-          "roadId": 1,
-          "stationId": 1,
-          "baseLaneId": 1,
-          "name": "车道1",
-          "type": 1
-        },{
-          "netRoadId": 2,
-          "roadId": 2,
-          "stationId": 2,
-          "baseLaneId": 2,
-          "name": "车道2",
-          "type": 2
-        }];
-
+        isLogin = true;
         showToast('登陆成功');
         Object.assign(_this.props, {road, station, lanes, token});
         setTimeout(() => loginSuccess(_this.props), 500);
@@ -148,11 +108,13 @@ const LoginScreen = ({
   };
 
   const setUserName = (account) => {
-    _this.props.account = account;
+    // _this.props.account = account;
+    enterInput({account});
   };
 
   const setPassWord = (passwd) => {
-    _this.props.passwd = passwd;
+    // _this.props.passwd = passwd;
+    enterInput({passwd});
   };
 
   const getWhiteSpace = (num) => {
@@ -177,12 +139,12 @@ const LoginScreen = ({
         <Text style={styles.title}>蓝色通道</Text>
         {getWhiteSpace(2)}
         <InputItem style={{borderBottomWidth: 0}} placeholder="请输入账号"
-          value="reportsiteuser"
+          value={_this.props.account}
           onChange={setUserName} />
           <WhiteSpace size="xl" />
           <InputItem style={{borderBottomWidth: 0}} placeholder="请输入密码"
             type="password"
-            value="Test@123"
+            value={_this.props.passwd}
             onChange={setPassWord} />
         {getWhiteSpace(2)}
         <Flex>
@@ -195,7 +157,7 @@ const LoginScreen = ({
             </WingBlank>
           </Flex.Item>
         </Flex>
-        <Notification message={this.props.toastMessage} timeout={1000} />
+        <Notification message={this.props.toastMessage} random={this.props.random} timeout={1000} />
       </Image>
     </View>
   )
@@ -218,6 +180,7 @@ LoginScreen.defaultProps = {
   toastMessage: '',
   account: '',
   passwd: '',
+  random: ''
 };
 
 LoginScreen.navigationOptions = {
@@ -233,11 +196,12 @@ const mapStateToProps = ({ login, nav, upload }) => ({
   account: login.account,
   passwd: login.passwd,
   toastMessage: login.toastMessage,
+  random: login.random,
 });
 
 const mapDispatchToProps = dispatch => ({
   login: (payload) => dispatch({ type: types.LOGINING, payload }),
-  enterInput: (obj) => dispatch({ type: types.ENTERINPUT, payload: obj }),
+  enterInput: (payload) => dispatch({ type: types.ENTERINPUT, payload }),
   loginSuccess: (payload) => dispatch({ type: types.LOGINSUCCESS, payload }),
   loginFail: (props) => dispatch({ type: types.LOGINFAIL, props }),
   showToast: (toastMessage) => dispatch({ type: types.TOAST, payload: toastMessage })

@@ -110,7 +110,6 @@ const styles = StyleSheet.create({
     height: 150, 
     width: 150,
     alignSelf: 'center',
-
   },
   input: {
     height: 50,
@@ -123,6 +122,11 @@ const styles = StyleSheet.create({
   pic: {
     height: 24,
     width: 24
+  },
+  picMenu: {
+    height: 20,
+    width: 20,
+    marginRight: 10
   },
   header: {
     flex: 3,
@@ -163,7 +167,7 @@ const UploadScreen = ({
 
   , ...props 
 }) => {
-
+  let isUpload = false;
   const _this = this;
   _this.props = {
     ...props
@@ -176,11 +180,12 @@ const UploadScreen = ({
       takePhotoButtonTitle: '拍照上传...',
       chooseFromLibraryButtonTitle: '从相册选择…',
       allowsEditing: true,
+      quality: 0.5,
     }, (res) => {
 
       if (res.uri) {
 
-        if (!/\.jpg$/.test(res.uri)) {
+        if (!/\.jpg$/.test(res.fileName)) {
           return showToast('上传照片格式必须是jpg');
         }
 
@@ -190,7 +195,8 @@ const UploadScreen = ({
 
         let {carCode} = _this.props;
         let avatarSource = { uri: res.uri };
-        uploadImg({carCode, avatarSource, carImage: 'data:image/jpeg;base64,' + res.data});
+        // uploadImg({carCode, avatarSource, carImage: 'data:image/jpeg;base64,' + res.data});
+        uploadImg({carCode, avatarSource, carImage: res.uri, imageName: res.fileName});
       }
     });
   };
@@ -251,7 +257,14 @@ const UploadScreen = ({
   }
 
   const _upload = () => {
-    let { token, carImage, shortPing, carCode, selectedOption } = _this.props;
+
+    if (isUpload) {
+      return;
+    }
+
+    isUpload = true;
+
+    let { token, carImage, imageName, shortPing, carCode, selectedOption } = _this.props;
     
     if (!token) {
       showToast('token不存在');
@@ -277,7 +290,18 @@ const UploadScreen = ({
         , carPlate = shortPing + carCode
         ;
       upload(_this.props);
-      $.get(URL.UPLOAD, {sign: JSON.stringify({
+  
+      let formData = new FormData();
+      formData.append('carImage', {uri: carImage, type: 'image/jpg', name: imageName});
+
+      let options = {
+        method:'POST',
+        headers: {}
+      };
+      options.headers['Content-Type'] = 'multipart/form-data; boundary=6ff46e0b6b5148d984f148b6542e5a5d';
+      options.body = formData;
+
+      return fetch(URL.UPLOAD + '?sign=' + encodeURIComponent(JSON.stringify({
         netRoadId
         , roadId
         , stationId
@@ -285,21 +309,26 @@ const UploadScreen = ({
         , laneId
         , token
         , carPlate
-        , carImage
-      })}).then((res) => {
-        const data = JSON.parse(res._bodyInit);
-        // alert(JSON.stringify(data))
+      })), options).then((res) => {
+         try {
+          const data = JSON.parse(res._bodyInit);
 
-        if (data.code != 0) {
-          showToast(data.msg);
-          return loginFail(_this.props);          
+          if (data.code != 0) {
+            showToast(data.msg);
+            isUpload = false;
+            return uploadFail(_this.props);
+          }
+
+          showToast('上传成功');
+          setTimeout(() => uploadSuccess(_this.props), 100);
+          isUpload = false;
+        } catch (err) {
+          alert(err);
         }
-
-        showToast('上传成功');
-        setTimeout(() => uploadSuccess(_this.props), 100);
       }).catch((err) => {
         showToast(err.message);
         uploadFail(_this.props);
+        isUpload = false;
       });
     }
   };
@@ -312,11 +341,11 @@ const UploadScreen = ({
           <MenuContext style={{flex:1, marginTop: 10}}>
             <View style={styles.header}>
               <Image style={styles.pic} source={require('../images/touming.png')} />
-              <Text style={{height: 30, lineHeight: 30, color: '#FFF', backgroundColor: 'rgba(0,0,0,0)'}}>当前站点</Text>
+              <Text style={{height: 20, lineHeight: 20, color: '#FFF', backgroundColor: 'rgba(0,0,0,0)'}}>当前站点</Text>
               
-              <Menu>
-                <MenuTrigger style={{marginTop:20}}>
-                  <Image style={styles.pic, {marginRight: 10}} source={require('../images/nav_icon_tab_pressed.png')} />
+              <Menu onSelect={value => {}}>
+                <MenuTrigger>
+                  <Image style={styles.picMenu} source={require('../images/nav_icon_tab_pressed.png')} />
                 </MenuTrigger>
                 <MenuOptions>
                   <MenuOption onSelect={value => {_logout()}}>
@@ -419,7 +448,6 @@ UploadScreen.propTypes = {
   uploadWord: PropTypes.string.isRequired,
   road: PropTypes.object.isRequired, 
   station: PropTypes.object.isRequired,  
-  selectedOption: PropTypes.object.isRequired,  
   lanes: PropTypes.array.isRequired,  
   token: PropTypes.string.isRequired,  
 };

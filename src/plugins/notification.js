@@ -37,7 +37,6 @@ class Notification extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-
     if (nextProps.random == this.props.random 
       && nextProps.random != void 0) {
       return;
