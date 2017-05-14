@@ -181,11 +181,14 @@ const UploadScreen = ({
       chooseFromLibraryButtonTitle: '从相册选择…',
       allowsEditing: true,
       quality: 0.5,
+      storageOptions: {
+        cameraRoll: true
+      },
     }, (res) => {
 
       if (res.uri) {
 
-        if (!/\.jpg$/.test(res.fileName)) {
+        if (!/\.jpg$/i.test(res.fileName)) {
           return showToast('上传照片格式必须是jpg');
         }
 
