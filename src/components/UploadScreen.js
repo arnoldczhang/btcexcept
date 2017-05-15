@@ -126,7 +126,8 @@ const styles = StyleSheet.create({
   picMenu: {
     height: 20,
     width: 20,
-    marginRight: 10
+    marginRight: 10,
+    marginTop: isIOS ? 10 : 0
   },
   header: {
     flex: 3,
